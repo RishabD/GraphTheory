@@ -1,192 +1,128 @@
 /*
-Rishab Dalai
-adj_matrix program part 1
-v1.0 notes
- I had it set up so the code searches for solutions async but overall have the same number of nodes traversed. This means that the first solution found is the shortest path.
-I used a vector to create a queue so i can fill it with tasks and have it complete them as they fill up(similar to async code). Once completed, the code clears the queue so that no other operation is done.
-(took some inspiration from generators in python)
+Shortest path v2.0
+Code below finds shortest path.
+The one I made doesn't need to traverse through all paths. I used semi-aysncronous code to find the path by effectively searching through all paths at the same time.
+The first one that finishes is shortest path.
+Code can be easily modified to find all paths in increasing order of path length
+I didn't use arrays for a lot of the components due to time complexity and also simplicity
 */
-
-
-#include <vector>
 #include <iostream>
-#include <algorithm>
-using namespace std;
+#include <vector>
+#include <map>
+std::vector<int> tasks;//Tasks is only used to execute tasks at front and place tasks at end. Arrays would be far slower since items would constantly need to be shifted
+std::vector<int> solution;//Solution is only used to add numbers to end of vector. Arrays could be used but would comlicate code
+std::map<int, bool> vals_done;//Map is used to check if value has been traversed or not. Time complexity of searching in map vs array is much better.
 
-vector<int> queue;
-
-struct graph
+class graph
 {
-    int nv;
-    int adj_matrix[100][100];
+public:
+	int highest_vertex_number;
+	int adj_list[100][100]; //Almost all data is constantly being accessed, so array is best due to low latency.
+
+	//Sets adj graph to all 0's
+	void reset_graph()
+	{
+		for (int i = 1; i <= highest_vertex_number;i++)
+		{
+			for (int j = 1; j <= highest_vertex_number;j++)
+			{
+				adj_list[i][j] = 0;
+			}
+			std::cout << std::endl;
+		}
+		std::cout << std::endl << std::endl;
+	}
+	//Prints out adj graph
+	void print_graph()
+	{
+		for (int i = 1; i <= highest_vertex_number;i++)
+		{
+			for (int j = 1; j <= highest_vertex_number;j++)
+			{
+				std::cout << adj_list[i][j];
+			}
+			std::cout << std::endl;
+		}
+		std::cout << std::endl << std::endl;
+	}
+	//1 means adjacent, 0 means not adjacent
+	void add_edge(int i, int j)
+	{
+		adj_list[i][j] = 1;
+		adj_list[j][i] = 1;
+	}
+	void del_edge(int i, int j)
+	{
+		adj_list[i][j] = 0;
+		adj_list[j][i] = 0;
+	}
+
+
+	//Task manager. Continously completes functions in task list until empty
+	void iterate()
+	{
+		while (!tasks.empty())
+		{
+			tasks[0];
+			tasks.erase(tasks.begin());
+			vals_done.clear();//Resets code to be used again
+		}
+	}
+	//Function called in main which then sets some prerequesites and triggers _short_path
+	void short_path(int v1, int v2)
+	{
+		std::vector<int> path = { v1 };
+		vals_done[2] = 1;
+		tasks.push_back(_short_path(v1, v2, path));
+		solution.empty();
+		iterate();
+	}
+
+	//Finds shortest path and stores in vector solution
+	int _short_path(int v1, int v2, std::vector<int> path)
+	{
+		//Saves path in solution if it hs reached end. Clears tasks as well (This part can be modified to save more paths that lead to the end vertex)
+		if (adj_list[v1][v2] == 1)
+		{
+			solution = path;
+			solution.push_back(v2);
+			tasks.clear();
+
+		}
+		//Checks for possible path branches and creates a new instance of _short_path to explore said branches
+		else
+		{
+			for (int i = 1; i <= highest_vertex_number; i++)
+			{
+				if (adj_list[i][v2] == 1 && !vals_done[i] && i != v1)
+				{
+					vals_done[i] = 1;
+					std::vector<int> new_path = path;
+					new_path.push_back(i);
+					tasks.push_back(_short_path(i, v2, new_path));
+				}
+			}
+		}
+		//Required, but I don't use.
+		return(0);
+	}
 };
 
-void reset_graph(graph* data)
-{
-    for (int i = 0; i < 100; i++)
-    {
-        for (int j = 0; j < 100; j++)
-        {
-            data->adj_matrix[i][j] = 0;
-
-        }
-    }
-    data->nv = 100;
-}
-
-int print_matrix(graph* data)
-{
-    for (int i = 0; i < data->nv; i++)
-    {
-        for (int j = 0; j < data->nv; j++)
-        {
-            cout << data->adj_matrix[i][j];
-        }
-        cout << endl;
-    }
-    cout << endl;
-    cout << endl;
-    return(0);
-}
-
-void add_edge(graph* data, int i, int j)
-{
-    data->adj_matrix[i][j] = 1;
-    data->adj_matrix[j][i] = 1;
-}
-
-void change_nv(graph* data, int num)
-{
-    data->nv = num;
-}
-
-void remove_adj(graph* data, int i, int j)
-{
-    data->adj_matrix[i][j] = 0;
-    data->adj_matrix[j][i] = 0;
-}
-
-
-
-
-int vals_done[100];
-
-bool is_in(int num)
-{
-    for (int i = 0; i < 100; i++)
-    {
-        if (num == vals_done[i])
-        {
-            return(true);
-        }
-
-    }
-    return(false);
-}
-
-
-void add(int num)
-{
-    for (int i = 0; i < 100; i++)
-    {
-        if (vals_done[i] == -1)
-        {
-            vals_done[i] = num;
-            break;
-        }
-    }
-}
-
-
-
-
-vector<int > ans;
-
-void equate_vectors(vector<int> base, vector<int> copy)
-{
-    for (int i = 0; i < base.size(); i++)
-    {
-        copy.push_back(base[i]);
-    }
-}
-
-
-
-
-
-
-int short_path(graph* data, int v1, int v2, vector<int> solution)
-{
-    if (data->adj_matrix[v1][v2] == 1)
-    {
-        ans = solution;
-        ans.push_back(v2);
-        queue.clear();
-        return(1);
-
-    }
-    else
-    {
-        int exists = 0;
-        for (int j = 0; j < data->nv; j++)
-        {
-            if (j != v1 && !is_in(j) && data->adj_matrix[v1][j]==1)
-            {
-               add(j);
-               vector<int> copy;
-               copy = solution;
-               copy.push_back(j);
-               queue.push_back(short_path(data, j, v2, copy));
-            }
-        }
-        return(exists);
-
-    }
-    return(0);
-}
-
-int iterate()
-{
-    while (queue.size() != 0)
-    {
-        queue[0];
-        queue.erase(queue.begin());
-    }
-    return(0);
-}
-
+//Test code
 int main()
 {
+	graph data1;
+	data1.highest_vertex_number = 9;
+	data1.reset_graph();
+	data1.add_edge(2, 3);
+	data1.add_edge(3, 4);
+	data1.add_edge(4, 5);
+	data1.add_edge(2, 6);
+	data1.add_edge(6, 5);
+	data1.add_edge(2, 1);
+	data1.short_path(2, 5);
 
-
-    graph* data1 = new graph;
-    reset_graph(data1);
-    add_edge(data1, 2, 3);
-    add_edge(data1, 3, 4);
-    add_edge(data1, 4, 5);
-    add_edge(data1, 2, 6);
-    add_edge(data1, 6, 5);
-    add_edge(data1, 2, 1);
-    data1->nv = 7;
-    print_matrix(data1);
-
-    for (int i = 0; i < 100; i++)
-    {
-        vals_done[i] = -1;
-    }
-    vals_done[0] = 2;
-
-
-
-    queue.push_back(short_path(data1, 2, 5, {2}));
-    iterate();
-
-
-
-   for (int i = 0; i < ans.size(); i++)
-   {
-       cout << ans[i] << endl;
-   }
-   return (0);
-
+	for (int i = 0; i < solution.size(); i++)
+		std::cout << solution[i] << ' ';
+	return(0);
 }
